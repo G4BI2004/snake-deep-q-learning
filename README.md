@@ -7,6 +7,11 @@ learning (Deep Q-Learning), without touching the base game provided by the instr
 (`serpent-algo.py`) — clock, grid size and scoring are left unchanged, as required.
 Built in about **1h30**.
 
+## Authors
+
+- Gabriel Franchi — [G4BI2004](https://github.com/G4BI2004)
+- Tom Archambaud — [TomVendee](https://github.com/TomVendee)
+
 ## What the project does
 
 The base game (`serpent-algo.py`) is imported as-is, unmodified. `snake-ia.py` wraps it
