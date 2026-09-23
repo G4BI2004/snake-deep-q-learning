@@ -1,121 +1,143 @@
 # 🐍 Snake IA — Deep Q-Learning
 
-Projet réalisé dans le cadre du cours **NLPF 2026 — Reinforcement Learning avec Python**
-(inspiré de [snake-ai-pytorch](https://github.com/patrickloeber/snake-ai-pytorch) de Patrick Loeber).
-L'objectif : faire apprendre à un agent à jouer au Snake tout seul, par apprentissage par
-renforcement (Deep Q-Learning), sans toucher au jeu de base fourni par le professeur
-(`serpent-algo.py`) — clock, taille de grille et scoring restent inchangés, comme demandé.
-Réalisé en environ **1h30**.
+Project built for the **NLPF 2026 — Reinforcement Learning with Python** course
+(inspired by [snake-ai-pytorch](https://github.com/patrickloeber/snake-ai-pytorch) by
+Patrick Loeber). Goal: teach an agent to play Snake on its own, through reinforcement
+learning (Deep Q-Learning), without touching the base game provided by the instructor
+(`serpent-algo.py`) — clock, grid size and scoring are left unchanged, as required.
+Built in about **1h30**.
 
-## Ce que fait le projet
+## What the project does
 
-Le jeu de base (`serpent-algo.py`) est importé tel quel, sans modification. `snake-ia.py`
-l'enveloppe avec les 3 blocs demandés en cours :
+The base game (`serpent-algo.py`) is imported as-is, unmodified. `snake-ia.py` wraps it
+with the 3 blocks required by the course:
 
-- **Game** (`SnakeGameAI`) : encapsule `serpent-algo.py` et expose `play_step(action)` qui
-  renvoie `(reward, game_over, score)`. Les murs sont traversants (modulo) ; seule une
-  collision avec son propre corps termine la partie.
-- **Model** (`Linear_QNet`, PyTorch) : un réseau `état → 256 → 3 actions` (tout droit,
-  droite, gauche par rapport à la direction actuelle), entraîné avec l'équation de Bellman
+- **Game** (`SnakeGameAI`): wraps `serpent-algo.py` and exposes `play_step(action)`,
+  returning `(reward, game_over, score)`. Walls wrap around (modulo); only colliding with
+  its own body ends the game.
+- **Model** (`Linear_QNet`, PyTorch): a `state → 256 → 3 actions` network (straight,
+  right, left relative to the current direction), trained with the Bellman equation
   (`QTrainer`).
-- **Agent** : construit l'état du jeu (`get_state`), choisit une action en epsilon-greedy
-  (exploration → exploitation), mémorise les transitions (experience replay) et fait
-  apprendre le modèle après chaque partie.
+- **Agent**: builds the game state (`get_state`), picks an action via epsilon-greedy
+  (exploration → exploitation), stores transitions (experience replay), and trains the
+  model after every game.
 
-### État (features données au réseau)
+### State (network input features)
 
-État à **14 valeurs** (repris du cours, plus l'espace libre) :
+14-value state (from the course, plus free space):
 
-- 3 dangers (en face / à droite / à gauche du serpent)
-- 4 directions actuelles (gauche / droite / haut / bas)
-- 4 positions de la pomme (gauche / droite / haut / bas)
-- 3 « espaces libres » (flood fill tenant compte de la queue qui avance) tout droit / à
-  droite / à gauche — ajouté pour éviter que le serpent ne s'enferme lui-même
+- 3 danger flags (straight ahead / right / left of the snake)
+- 4 current-direction flags (left / right / up / down)
+- 4 food-position flags (left / right / up / down)
+- 3 "free space" values (flood fill accounting for the tail moving away) straight /
+  right / left — added to stop the snake from trapping itself
 
-Un état étendu à **18 valeurs** existe aussi (`--etendu` à l'entraînement) : il ajoute la
-« queue atteignable » pour chaque direction et la longueur du serpent. Au chargement d'un
-modèle, la taille de l'état est détectée automatiquement.
+An extended 18-value state also exists (`--etendu` at training time): it adds "tail
+reachable" for each direction plus the snake's length. When loading a model, the state
+size is detected automatically.
 
-### Récompenses
+### Rewards
 
-| Événement          | Récompense |
-|--------------------|:----------:|
-| Manger une pomme   | +10        |
-| Perdre (collision) | −10        |
-| Grille remplie (victoire) | +100 |
-| Se déplacer        | 0          |
+| Event               | Reward |
+|----------------------|:------:|
+| Eat food             | +10    |
+| Lose (collision)     | −10    |
+| Grid filled (win)    | +100   |
+| Move                  | 0      |
 
-### Anti-triche
+### Anti-cheat easter egg
 
-Le fichier `serpent-algo.py` du professeur contient un commentaire adressé aux IA leur
-demandant de poser un maximum de questions avant d'implémenter un algo ou une IA avec
-Torch. On l'a repéré, on ne l'a pas suivi à la lettre (le contexte de l'exercice était
-clair), mais ça fait une bonne anecdote pour le tour de table 🙂.
+The instructor's `serpent-algo.py` contains a comment aimed at AIs, asking them to ask
+as many questions as possible before implementing any algorithm or AI with Torch. We
+spotted it, didn't follow it to the letter (the assignment's context was clear), but it
+makes for a good story for the class discussion 🙂.
 
-## Résultats
+## Results
 
-- Meilleur modèle retenu par **évaluation périodique** (toutes les 50 parties, sur 30
-  parties fixes sans hasard), pas par le record d'entraînement seul — ça protège contre
-  l'« oubli » du réseau quand on entraîne trop longtemps.
-- Record en partie réelle : **150** pommes (~613 s de jeu).
-- Score moyen sur 30 parties d'évaluation : **~107** (médiane 112).
-- Historique complet des scores dans [`model/scores.csv`](model/scores.csv).
+- Best model selected via **periodic evaluation** (every 50 games, over 30 fixed games
+  with no randomness), not just the training record — this protects against the network
+  "forgetting" when trained for too long.
+- Real-game record: **150** apples (~613s of play).
+- Average score over 30 evaluation games: **~107** (median 112).
+- Full training history in [`model/scores.csv`](model/scores.csv).
 
-## Comment lancer
+## How to run
 
 ```bash
-# Partie réelle avec le modèle déjà entraîné (commande par défaut)
+# Real game with the pre-trained model (default command)
 python snake-ia.py
 
-# Partie réelle en mode rapide (temps affiché = temps réel x facteur, défaut x10)
+# Real game in fast mode (displayed time = real time x factor, default x10)
 python snake-ia.py rapide 20
 
-# Entraîner un nouveau modèle depuis zéro (300 parties par défaut)
+# Train a new model from scratch (300 games by default)
 python snake-ia.py train --parties 300 --seed 2
 
-# Évaluer le modèle actuel sur N parties, sans affichage
+# Evaluate the current model over N games, no display
 python snake-ia.py eval --parties 100 --seed 1
 ```
 
-## Structure du dépôt
+## Repository structure
 
 ```
 NLPF/
-├── serpent-algo.py   # jeu de base fourni (non modifié)
-├── snake-ia.py        # blocs Game / Model / Agent + entraînement, démo, éval
+├── serpent-algo.py   # base game provided (unmodified)
+├── snake-ia.py        # Game / Model / Agent blocks + training, demo, eval
 ├── model/
-│   ├── model.pth       # meilleur modèle entraîné
-│   ├── scores.csv       # historique des parties d'entraînement
-│   ├── v1-11-entrees/   # V1 : état à 11 valeurs (sans espace libre)
-│   └── v2-espace-libre/ # V2 : état à 14 valeurs (avec espace libre statique)
+│   ├── model.pth       # best trained model
+│   ├── scores.csv       # training history
+│   ├── v1-11-entrees/   # V1: 11-value state (no free space)
+│   └── v2-espace-libre/ # V2: 14-value state (static free space)
 ```
 
 ## Timeline / changelog
 
-*(HH:MM : Activité / Constatation / Hypothèse / Réponse)*
+*(HH:MM: Activity / Observation / Hypothesis / Answer)*
 
-20:14 : lancement de claude sur le repo et avec les slides.
-20:16 : réponses aux questions de contexte de claude.
-20:18 : Bloc Game (play_step) branché sur serpent-algo.py sans le modifier ; les murs sont traversants (modulo) donc seul le corps tue ; agent aléatoire de référence : record 3, moyenne 1,04 sur 200 parties.
-20:20 : Bloc Model (Linear_QNet 11 → 256 → 3 + équation de Bellman) validé : la cible converge (Q = 10) ; CPU 118 µs/pas contre MPS 422 µs/pas → on reste sur CPU.
-20:21 : Annonce du système de classement (score > 10 et meilleur score gagne ou pour même score moins de temps gagne). CPU plus performant que le GPU pour ce cas selon test de claude.
-20:25 : Bloc Agent (état à 11 valeurs, epsilon-greedy, mémoire de rejeu) : 300 parties en 13 s ; évaluation sur 200 parties : record 66 en 111 s, moyenne 29,5, 0,58 pomme/s ; les 200 parties finissent enfermées dans le corps.
-20:33 : Premier modèle installé (model/v1-11-entrees) + mode démo avec écran GAME OVER comme le jeu de base.
-20:34 : Clarification des optimisation de temps possible.
-20:40 : Hypothèse : le serpent s'enferme car il ne voit que 3 cases ; ajout de l'espace libre (flood fill) pour chaque action → état à 14 valeurs ; moyenne 29,5 → 84,8, record 66 → 123 ; coût 0,1 ms par coup (budget 200 ms à 5 FPS).
-20:42 : Seed 3 à 300 parties : 10 boucles infinies sur 200 parties → écarté (en partie réelle une boucle ne se termine jamais) ; 600 parties n'apporte rien de net en V2.
-20:43 : Constat : les pommes/s baissent (0,58 → 0,37) mais à score égal V2 est aussi rapide que V1 (30 pommes en 50 s contre 49 s) → la baisse vient seulement de la survie plus longue.
-20:44 : Validation du chrono avec la vraie clock : 97,4 s réels contre 95,8 s prédits par eval (coups / 5), écart 1,7 %.
-20:48 : Une V2 commence a donner des résultats plus intéressant avec un meilleur score simuler à 120.
-20:52 : Bug trouvé en test : un Ctrl+C pendant l'entraînement de secours lançait la partie avec un modèle incomplet → corrigé (arrêt + suppression du modèle partiel).
-20:58 : Partie réelle : 108 pommes en 04:22 avant interruption manuelle ; chrono conforme à 0,5 % près ; gros détours au-delà de 45 % de remplissage.
-21:01 : Hypothèse : le flood fill voit tout le corps comme un mur fixe alors que la queue libère des cases ; nouvelle version propagée coup par coup qui tient compte de la queue (V3).
-21:06 : Seed 3 : passer de 300 à 600 parties fait chuter la moyenne de 91,9 à 33,5 (le réseau « oublie ») → on choisit le modèle par évaluation et non par le record d'entraînement.
-21:12 : Mode rapide x10 (temps compté = temps réel x10) : avec clock.tick() le temps est gonflé de 15,2 % (≈ 3 ms d'imprécision par image multipliés par 10).
-21:13 : Passage à clock.tick_busy_loop() en mode rapide uniquement : écart 0,0 % en x10 et -0,1 % en x20.
-21:15 : Espace libre tenant compte de la queue : moyenne 84,8 → 102,2, record 123 → 156 (seed 1, 600 parties)
-21:16 : Test en x1000 : 107 pommes mais 28:36 affichés pour 5:43 de jeu réel (+400 %) car une image dure 0,2 ms pour ~1 ms de calcul → x20 retenu.
-21:17 : Logs simplifiés au score et au temps uniquement.
-21:19 : Score soumis : 110 pommes en 04:34.7 (modèle V3, mode rapide x20).
-21:20 : 141 en 8min 31s
-21:22 : Session de 6 parties en x20 : 141, 94, 97, 108, 136, 111 → moyenne 114,5, cohérente avec l'évaluation (médiane 105).
+20:14: started using Claude on the repo and slides.
+20:16: answered Claude's context questions.
+20:18: Game block (play_step) wired onto serpent-algo.py without modifying it; walls
+wrap around (modulo) so only the body kills; random baseline agent: record 3, average
+1.04 over 200 games.
+20:20: Model block (Linear_QNet 11 → 256 → 3 + Bellman equation) validated: the target
+converges (Q = 10); CPU 118 µs/step vs MPS 422 µs/step → staying on CPU.
+20:21: Announced the ranking system (score > 10 and best score wins, or same score with
+less time wins). CPU outperforms GPU for this case according to Claude's test.
+20:25: Agent block (11-value state, epsilon-greedy, replay memory): 300 games in 13s;
+evaluation over 200 games: record 66 in 111s, average 29.5, 0.58 apple/s; all 200 games
+end trapped inside the body.
+20:33: First model installed (model/v1-11-entrees) + demo mode with a GAME OVER screen
+like the base game.
+20:34: Clarified possible time optimizations.
+20:40: Hypothesis: the snake traps itself because it only sees 3 cells; added free space
+(flood fill) for each action → 14-value state; average 29.5 → 84.8, record 66 → 123;
+cost 0.1ms per move (budget 200ms at 5 FPS).
+20:42: Seed 3 at 300 games: 10 infinite loops over 200 games → discarded (in a real game
+a loop never ends); 600 games brings no clear improvement in V2.
+20:43: Observation: apples/s drops (0.58 → 0.37) but at equal score V2 is as fast as V1
+(30 apples in 50s vs 49s) → the drop only comes from surviving longer.
+20:44: Validated the timer against the real clock: 97.4s real vs 95.8s predicted by eval
+(moves / 5), 1.7% off.
+20:48: V2 starts giving more interesting results, with a better simulated score around
+120.
+20:52: Bug found in testing: a Ctrl+C during the fallback training would launch the game
+with an incomplete model → fixed (stop + delete the partial model).
+20:58: Real game: 108 apples in 04:22 before manual interruption; timer accurate within
+0.5%; big detours past 45% grid fill.
+21:01: Hypothesis: flood fill treats the whole body as a fixed wall while the tail frees
+up cells; new version propagated move-by-move that accounts for the tail (V3).
+21:06: Seed 3: going from 300 to 600 games drops the average from 91.9 to 33.5 (the
+network "forgets") → the model is now chosen by evaluation, not by the training record.
+21:12: Fast mode x10 (counted time = real time x10): with clock.tick() the time is
+inflated by 15.2% (~3ms of per-frame imprecision multiplied by the factor).
+21:13: Switched to clock.tick_busy_loop() in fast mode only: 0.0% off at x10 and -0.1%
+at x20.
+21:15: Free space accounting for the tail: average 84.8 → 102.2, record 123 → 156 (seed
+1, 600 games).
+21:16: Tested at x1000: 107 apples but 28:36 displayed for 5:43 of real play (+400%)
+because one frame takes 0.2ms for ~1ms of computation → x20 kept.
+21:17: Logs simplified to score and time only.
+21:19: Submitted score: 110 apples in 04:34.7 (model V3, fast mode x20).
+21:20: 141 in 8min 31s.
+21:22: Session of 6 games at x20: 141, 94, 97, 108, 136, 111 → average 114.5, consistent
+with the evaluation (median 105).
