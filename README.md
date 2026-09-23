@@ -9,8 +9,8 @@ Built in about **1h30**.
 
 ## Authors
 
-- Gabriel Franchi — [gabriel.franchi](https://github.com/gabriel.franchi)
-- Tom Archambaud — [tom.archambaud](https://github.com/tom.archambaud)
+- Gabriel Franchi — [G4BI2004](https://github.com/G4BI2004)
+- Tom Archambaud — [TomVendee](https://github.com/TomVendee)
 
 ## What the project does
 
